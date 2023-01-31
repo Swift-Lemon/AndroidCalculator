@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Calculator</string>
+    <string name="txtOperation">operation</string>
+    <string name="txtNumDisplay">numDisplay</string>
+    <string name="txtClear">AC</string>
+    <string name="txtNegPos">+/-</string>
+    <string name="txtDivide">/</string>
+    <string name="txt7">7</string>
+    <string name="txt8">8</string>
+    <string name="txt9">9</string>
+    <string name="txtMultiply">x</string>
+    <string name="txt4">4</string>
+    <string name="txt5">5</string>
+    <string name="txt6">6</string>
+    <string name="txtSubtract">-</string>
+    <string name="txt1">1</string>
+    <string name="txt2">2</string>
+    <string name="txt3">3</string>
+    <string name="txtAdd">+</string>
+    <string name="txt0">0</string>
+    <string name="txtDecimal">.</string>
+    <string name="txtDelete">Del.</string>
+    <string name="txtEquals">=</string>
+</resources>
