@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         numDisplayTV = (TextView) findViewById(R.id.numDisplayTextView);
+
         equationTV = (TextView) findViewById(R.id.equationTextView);
 
         btn0 = (Button)findViewById(R.id.btn0);
@@ -114,9 +115,18 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.btn8:
                 case R.id.btn9:
 
-                    if (currentNum == "0") {
+                    //contentEquals allows checking between two strings, or a string and a charsequence.
+                    //on app creation the numDisplayTV is set to a charSequence since it takes the value directly
+                    //from strings.xml, but later it may be reassigned to the String "0" so checking both is needed.
+                    if (currentNum.contentEquals("0") ) {
+                        //this prevents 0-led numbers (ex.08)
+                        numDisplayTV.setText(buttonText);
+
+                    } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)(-?\\d*\\.?\\d+)=$")) {
 
                         numDisplayTV.setText(buttonText);
+                        resetEquation();
+
                     } else {
 
                         concatToNumDisplayTV(buttonText);
@@ -131,29 +141,48 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.btnMultiply:
                 case R.id.btnDivide:
                     //if the right side of the equation hasn't been assigned yet:
-                    //also need to validate that currentNum isn't null or 0 or 0-led(e.x. 09)
 
                     //this will allow the user to keep working off a result they get from hitting the = button,
                     //or keep the functions rolling if they've only entered numbers and equation
-                    if (equation.matches("^\\d*\\.?\\d+\\+?-?/?x?\\d*\\.?\\d+=?$")) {
+                    if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)(-?\\d*\\.?\\d+)=$")) {
+
+                        resetEquation();
+                        //store the operator and left number for use in the calc class
+                        left = Double.parseDouble(currentNum);
+                        operator = buttonText;
+
+                        //update the equation textview
+                        concatToEquationTV(currentNum,buttonText);
+
+                    } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$") && !currentNum.equals("0")) {
 
                         right = Double.parseDouble(currentNum);
 
-                        equationTV.setText("");
-                        equation = "";
+                        resetEquation();
 
-                        currentNum = String.valueOf(calculateResult());
+                        left = calculateResult();
+
+                        currentNum = String.valueOf(left);
+                        operator = buttonText;
+                        equationTV.setText(currentNum+buttonText);
+
+                    } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$")) {
+
+                        operator = buttonText;
+                        currentNum = String.valueOf(left);
+                        equationTV.setText(currentNum+buttonText);
+
+                    } else {
+                        //store the operator and left number for use in the calc class
+                        operator = buttonText;
+                        left = Double.parseDouble(currentNum);
+
+                        //update the equation textview
+                        concatToEquationTV(currentNum,buttonText);
                     }
 
-                    //store the operator and left number for use in the calc class
-                    operator = buttonText;
-                    left = Double.parseDouble(currentNum);
-
-                    //update the equation textview
-                    concatToEquationTV(currentNum,buttonText);
-
                     //reset the numDisplayTV
-                    numDisplayTV.setText("");
+                    numDisplayTV.setText("0");
 
                     break;
 
@@ -179,13 +208,13 @@ public class MainActivity extends AppCompatActivity {
 
                 case R.id.btnClear:
                     numDisplayTV.setText("0");
-                    equationTV.setText("");
+                    resetEquation();
 
                     break;
 
                 case R.id.btnEquals:
                     //validate that left and operator have been assigned a value
-                    if (equation.matches("^\\d*\\.?\\d+\\+?-?/?x?$")) {
+                    if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$")) {
 
                         right = Double.parseDouble(currentNum);
                         concatToEquationTV(currentNum, buttonText);
@@ -204,19 +233,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }; //end OnCLickListener
 
-    private boolean containsOperator(String equation) {
-        //this method is used to determine if the next operator clicked will automatically
-        //call the calculateResult method, or if this is the first time an operator has been selected.
-        return (equation.contains("x") || equation.contains("-") || equation.contains("+") || equation.contains("/"));
-    }
-
     private boolean containsDecimal(String equation) {
         return (equation.contains("."));
-    }
-
-    private boolean equationComplete(String equation) {
-        //could come up with a regex for matching a patern of 0.00(+-x/)0.00(=)
-        return (equation.contains("="));
     }
 
     private void concatToNumDisplayTV(String buttonText) {
@@ -249,7 +267,13 @@ public class MainActivity extends AppCompatActivity {
     private double calculateResult() {
 
         Calc calc = new Calc(left, right, operator);
+
         return calc.getResult();
 
+    }
+
+    private void resetEquation() {
+        equationTV.setText("");
+        equation = "";
     }
 }
