@@ -264,6 +264,8 @@ public class MainActivity extends AppCompatActivity {
 
     //the purpose of the two booleans below is better code readability in conditionals
     private boolean equationHasLeftAndOperator() {
+
+        //to add number formatting, you would need to remove all commas before checking the match
         return equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$");
     }
 
