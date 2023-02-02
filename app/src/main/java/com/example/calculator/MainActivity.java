@@ -7,19 +7,17 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
+import java.util.Locale;
+
 public class MainActivity extends AppCompatActivity {
 
-    TextView numDisplayTV, equationTV;
+    TextView equationTV, numDisplayTV;
 
-    String equation, currentNum;
+    //strings used to access and manipulate contents of text views
+    String equation, numDisplayContent;
 
-    //declare the left and right side of the equation, and operator, as string instance variables
-    //so that you don't need to parse them from operation later
-    double left;
-    double right;
-    String operator;
+    Calc calc;
 
-    //declare all buttons:
     Button btn0, btn1, btn2, btn3, btn4, btn5, btn6, btn7, btn8, btn9,
     btnAdd, btnSubtract, btnMultiply, btnDivide, btnDecimal, btnNegPos, btnDelete, btnClear, btnEquals;
 
@@ -30,8 +28,9 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         numDisplayTV = (TextView) findViewById(R.id.numDisplayTextView);
-
         equationTV = (TextView) findViewById(R.id.equationTextView);
+
+        calc = new Calc();
 
         btn0 = (Button)findViewById(R.id.btn0);
         btn0.setOnClickListener(onButtonClicked);
@@ -96,12 +95,19 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onClick(View view) {
-            //casting the view to a button allows using .getText().toString()
+            //casting the view to a button allows using .getText()
             Button clickedButton = (Button)view;
             String buttonText = clickedButton.getText().toString();
 
+            //on click, values currently displayed on the screen will be read for manipulation
             equation = equationTV.getText().toString();
-            currentNum = numDisplayTV.getText().toString();
+            numDisplayContent = numDisplayTV.getText().toString();
+
+            //having NaN or Infinity as a result will cause any button to reset the ui:
+            if ("NaN".equals(numDisplayContent) || "Infinity".equals(numDisplayContent)) {
+
+                resetAll();
+            }
 
             switch (clickedButton.getId()) {
                 case R.id.btn0:
@@ -115,17 +121,21 @@ public class MainActivity extends AppCompatActivity {
                 case R.id.btn8:
                 case R.id.btn9:
 
-                    //contentEquals allows checking between two strings, or a string and a charsequence.
-                    //on app creation the numDisplayTV is set to a charSequence since it takes the value directly
-                    //from strings.xml, but later it may be reassigned to the String "0" so checking both is needed.
-                    if (currentNum.contentEquals("0") ) {
+                    //contentEquals allows checking between a string and a charsequence. (or string and a string)
+                    //on app creation/ui reset the numDisplayTV is set to a charSequence since
+                    // it takes the value directly from strings.xml
+                    if (numDisplayContent.contentEquals("0")) {
                         //this prevents 0-led numbers (ex.08)
                         numDisplayTV.setText(buttonText);
 
+                    } else if (numDisplayContent.contentEquals("-0")) {
+
+                        numDisplayTV.setText("-" + buttonText);
+
                     } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)(-?\\d*\\.?\\d+)=$")) {
 
+                        resetEquationTV();
                         numDisplayTV.setText(buttonText);
-                        resetEquation();
 
                     } else {
 
@@ -134,81 +144,83 @@ public class MainActivity extends AppCompatActivity {
 
                     break;
 
-                //for all of the operator buttons, you need to see if there's already a left and right value, and if so
-                //the button activates the equals button and perform the operation on the result plus the next number entered.
                 case R.id.btnAdd:
                 case R.id.btnSubtract:
                 case R.id.btnMultiply:
                 case R.id.btnDivide:
-                    //if the right side of the equation hasn't been assigned yet:
 
                     //this will allow the user to keep working off a result they get from hitting the = button,
-                    //or keep the functions rolling if they've only entered numbers and equation
                     if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)(-?\\d*\\.?\\d+)=$")) {
 
-                        resetEquation();
-                        //store the operator and left number for use in the calc class
-                        left = Double.parseDouble(currentNum);
-                        operator = buttonText;
+                        //store the left number for use in the calc class
+                        calc.setLeft(Double.parseDouble(numDisplayContent));
 
-                        //update the equation textview
-                        concatToEquationTV(currentNum,buttonText);
+                        resetEquationTV();
 
-                    } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$") && !currentNum.equals("0")) {
+                    //this allows a user to enter a new number and continue the equation displyed in equationTV, without hitting the = button
+                    } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$") && !numDisplayContent.equals("0")) {
 
-                        right = Double.parseDouble(currentNum);
+                        calc.setRight(Double.parseDouble(numDisplayContent));
 
-                        resetEquation();
+                        calc.setLeft(calc.getResult());
+                        numDisplayContent = String.valueOf(calc.getLeft());
 
-                        left = calculateResult();
+                        resetEquationTV();
 
-                        currentNum = String.valueOf(left);
-                        operator = buttonText;
-                        equationTV.setText(currentNum+buttonText);
-
+                    //this alows the user to change their operator after they've already picked one
                     } else if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$")) {
 
-                        operator = buttonText;
-                        currentNum = String.valueOf(left);
-                        equationTV.setText(currentNum+buttonText);
+                        numDisplayContent = String.valueOf(calc.getLeft());
+
+                        resetEquationTV();
 
                     } else {
-                        //store the operator and left number for use in the calc class
-                        operator = buttonText;
-                        left = Double.parseDouble(currentNum);
-
-                        //update the equation textview
-                        concatToEquationTV(currentNum,buttonText);
+                        //store the left number for use in the calc class
+                        calc.setLeft(Double.parseDouble(numDisplayContent));
                     }
 
+                    calc.setOperator(buttonText);
+
+                    concatToEquationTV(removeEmptyDecimals(numDisplayContent), buttonText);
+
                     //reset the numDisplayTV
-                    numDisplayTV.setText("0");
+                    numDisplayTV.setText(R.string.txt0);
 
                     break;
 
                 case R.id.btnDecimal:
-                    //validate that there isn't already a dot in numDisplay with regex, and if not
-                    if (!containsDecimal(currentNum)) {
+
+                    //if the user is starting new after a finished equation, reset displays
+                    if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)(-?\\d*\\.?\\d+)=$")) {
+
+                        numDisplayTV.setText("0" + buttonText);
+                        resetEquationTV();
+
+                    //validate that there isn't already a dot in numDisplay
+                    } else if (!numDisplayContent.contains(".")) {
+
                         concatToNumDisplayTV(buttonText);
                     }
+
                     break;
 
                 case R.id.btnNegPos:
-                    currentNum = Double.toString(Double.parseDouble(currentNum)*(-1));
-                    numDisplayTV.setText(currentNum);
+
+                    numDisplayContent = Double.toString(Double.parseDouble(numDisplayContent)*(-1));
+                    numDisplayTV.setText(removeEmptyDecimals(numDisplayContent));
 
                     break;
 
                 case R.id.btnDelete:
                     //make sure the screen isn't displaying the default value
-                    currentNum = deleteChar(currentNum);
-                    numDisplayTV.setText(currentNum);
+
+                    numDisplayTV.setText(deleteChar(numDisplayContent));
 
                     break;
 
                 case R.id.btnClear:
-                    numDisplayTV.setText("0");
-                    resetEquation();
+
+                    resetAll();
 
                     break;
 
@@ -216,64 +228,72 @@ public class MainActivity extends AppCompatActivity {
                     //validate that left and operator have been assigned a value
                     if (equation.matches("^(-?\\d*\\.?\\d+)(-?\\+?/?x?)$")) {
 
-                        right = Double.parseDouble(currentNum);
-                        concatToEquationTV(currentNum, buttonText);
+                        calc.setRight(Double.parseDouble(numDisplayContent));
 
-                        double result = calculateResult();
-                        numDisplayTV.setText(Double.toString(result));
+                        concatToEquationTV(numDisplayContent, buttonText);
+
+                        double result = calc.getResult();
+                        numDisplayTV.setText(removeEmptyDecimals(Double.toString(result)));
                         //somewhere add decimal formatting for if the result is an int
                     }
 
                     break;
-
-                default:
-                    //edit this to do what you want
-                    throw new IllegalStateException("Unexpected value: " + clickedButton.getId());
             }
         }
     }; //end OnCLickListener
 
-    private boolean containsDecimal(String equation) {
-        return (equation.contains("."));
-    }
-
     private void concatToNumDisplayTV(String buttonText) {
 
-        currentNum = currentNum+buttonText;
-        numDisplayTV.setText(currentNum);
+        numDisplayContent = numDisplayContent + buttonText;
+        numDisplayTV.setText(numDisplayContent);
     }
 
     private void concatToEquationTV(String number, String buttonText) {
 
         //this method will be called after validation and after an operator is selected to add the value from numDisplayTV;
-        equation = equation+number+buttonText;
+        equation = equation+removeEmptyDecimals(number)+buttonText;
         equationTV.setText(equation);
     }
 
+    private void resetAll() {
+
+        numDisplayTV.setText(R.string.txt0);
+        resetEquationTV();
+
+        //below isn't really necessary since the equals button
+        //won't be functional if new values haven't been given
+        numDisplayContent = numDisplayTV.getText().toString();
+        calc.setLeft(0);
+        calc.setRight(0);
+        calc.setOperator("");
+    }
+
+    private void resetEquationTV() {
+        equationTV.setText("");
+        equation = "";
+    }
 
     private String deleteChar(String string) {
 
         //give a default value to return if the string passed in is too short
         String newString = "0";
 
-        if ((string != null) && (string.length() > 1)) {
+        //the third piece of logic will ensure the user isn't left with a lone "-", and the numDisplayTV resets
+        if ((string != null) && (string.length() > 1) && (!string.matches("^-\\d$"))) {
             newString = string.substring(0, string.length() - 1);
         }
 
         return newString;
     }
 
-    //seperate method so that it can be called by = or second instance of operator
-    private double calculateResult() {
+    private String removeEmptyDecimals(String num) {
 
-        Calc calc = new Calc(left, right, operator);
+        String newString = num;
 
-        return calc.getResult();
+        //if the number entered is a whole number, remove the empty decimal
+        if ((Double.parseDouble(num) % 1 == 0))
+            newString = String.format(Locale.CANADA, "%.0f", Double.parseDouble(num));
 
-    }
-
-    private void resetEquation() {
-        equationTV.setText("");
-        equation = "";
+        return newString;
     }
 }

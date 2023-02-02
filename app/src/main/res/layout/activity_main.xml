@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:backgroundTint="#856464"
     tools:context=".MainActivity">
 
     <TableLayout
@@ -33,7 +32,7 @@
                 android:gravity="end"
                 android:textAlignment="viewEnd"
                 android:textColor="#808080"
-                android:textSize="30sp" />
+                android:textSize="40sp" />
         </TableRow>
 
         <TableRow
@@ -55,7 +54,7 @@
                 android:text="@string/txt0"
                 android:textAlignment="viewEnd"
                 android:textColor="#808080"
-                android:textSize="60sp" />
+                android:textSize="70sp" />
         </TableRow>
 
         <TableRow

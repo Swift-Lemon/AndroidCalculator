@@ -2,34 +2,33 @@ package com.example.calculator;
 
 public class Calc {
 
-    private double num1;
-    private double num2;
+    private double left;
+    private double right;
     private double result;
     private String operator;
 
-    public double getResult() {return this.result;}
+    public void setLeft(double left) {this.left = left;}
+    public void setRight(double right) {this.right = right;}
+    public void setOperator(String operator) {this.operator = operator;}
 
-    public Calc(double num1, double num2, String operator) {
+    public double getLeft() {return left;}
 
-        //maybe alter to get rid of Operator enum:
-        this.num1 = num1;
-        this.num2 = num2;
-        this.operator = operator;
-
+    public double getResult() {
         switch (operator) {
             case "+":
-                this.result = add(num1, num2);
+                this.result = add(left, right);
                 break;
             case "-":
-                this.result = subtract(num1, num2);
+                this.result = subtract(left, right);
                 break;
             case "x":
-                this.result = multiply(num1, num2);
+                this.result = multiply(left, right);
                 break;
             case "/":
-                this.result = divide(num1, num2);
+                this.result = divide(left, right);
                 break;
         }
+        return this.result;
     }
 
     private double add(double num1, double num2) {
@@ -47,5 +46,4 @@ public class Calc {
     private double divide(double num1, double num2) {
         return num1 / num2;
     }
-
 }
