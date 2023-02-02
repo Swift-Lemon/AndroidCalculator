@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
                         resetEquationTV();
 
                     //this allows a user to enter a new number and continue the equation displyed in equationTV, without hitting the = button
-                    //it's necessary to validate 0's so that no form of division by zero (or rather the NaN result) can go to equation TV
+                    //it's necessary to validate 0's so that no form of division by zero (Infinity or NaN) can go to equation TV
                     } else if (equationHasLeftAndOperator() && !removeEmptyDecimals(numDisplayContent).equals("0") && !removeEmptyDecimals(numDisplayContent).equals("-0")) {
 
                         calc.setRight(Double.parseDouble(numDisplayContent));
