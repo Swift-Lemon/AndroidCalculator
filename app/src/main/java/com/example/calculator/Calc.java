@@ -28,9 +28,12 @@ public class Calc {
                 this.result = divide(left, right);
                 break;
         }
+
         return this.result;
     }
 
+    //I'm not sure if the below methods are necessary since the operations could just be done in the
+    //getResult method without adding much bulk, but I think this is better encapsulation practise
     private double add(double num1, double num2) {
         return num1 + num2;
     }
